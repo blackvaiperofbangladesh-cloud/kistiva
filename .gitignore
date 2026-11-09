@@ -29,3 +29,12 @@ pnpm-debug.log*
 
 # webflow cli build artifacts
 .tmp/
+
+.env.*
+!.env.example
+playwright-report/
+test-results/
+evidence/vercel/*-script-*.js
+
+# Private audit snapshots must never be published to the source repository.
+evidence/

@@ -1,24 +1,32 @@
 {
-  "name": "astro",
+  "name": "kristiva",
   "type": "module",
   "version": "0.0.1",
   "engines": {
-    "node": ">=22.12.0"
+    "node": "24.x"
   },
   "overrides": {
     "vite": "^8"
   },
   "scripts": {
-    "dev": "astro dev",
-    "build": "astro build",
-    "preview": "astro build && wrangler dev",
+    "dev": "node scripts/serve.mjs marketplace",
+    "build": "node scripts/build.mjs",
+    "preview": "node scripts/serve.mjs marketplace",
     "deploy": "webflow cloud deploy",
     "astro": "astro",
-    "cf-typegen": "wrangler types"
+    "cf-typegen": "wrangler types",
+    "test": "node --test tests/*.test.mjs",
+    "build:legacy": "astro build",
+    "build:marketplace": "node scripts/build.mjs marketplace",
+    "build:mobile": "node scripts/build.mjs mobile",
+    "build:merchant": "node scripts/build.mjs merchant",
+    "build:admin": "node scripts/build.mjs admin",
+    "test:browser": "playwright test"
   },
   "dependencies": {
     "@astrojs/cloudflare": "^14.1.0",
     "@astrojs/react": "^6.0.0",
+    "@supabase/supabase-js": "2.105.0",
     "@types/react": "^19.1.2",
     "@types/react-dom": "^19.1.2",
     "astro": "^7.0.5",
@@ -27,6 +35,8 @@
   },
   "devDependencies": {
     "@cloudflare/workers-types": "^4.20250415.0",
+    "@playwright/test": "1.62.1",
     "wrangler": "^4.83.0"
-  }
+  },
+  "private": true
 }
