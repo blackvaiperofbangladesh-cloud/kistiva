@@ -19,7 +19,8 @@ async function refresh(){try{if(admin){
  table('orderRows',orders,['order_number','customer_id',r=>money(r.grand_total,r.currency),'status',()=> 'Status changes require verified workflow']);
  table('paymentRows',payments,['order_id',r=>money(r.amount,r.currency),'provider',r=>r.transaction_hash||r.gateway_reference||'—','status',()=> 'Verification workflow not activated']);
  table('installmentRows',[],['id']);table('collectionRows',[],['id']);
- for(const [name,rows] of [['Audit logs',audit],['Shipments',shipments],['Commission records',reports.commissions],['Payout records',reports.payouts]]){let s=document.createElement('section');s.className='panel';s.innerHTML=`<h3>${name}</h3><p>${rows.length} records loaded (maximum 100).</p><div style="overflow:auto"><table><tbody>${rows.map(r=>'<tr><td>'+esc(JSON.stringify(r))+'</td></tr>').join('')}</tbody></table></div>`;$('overview').append(s);}
+ document.querySelectorAll('[data-live-report]').forEach(section=>section.remove());
+ for(const [name,rows] of [['Audit logs',audit],['Shipments',shipments],['Commission records',reports.commissions],['Payout records',reports.payouts]]){let s=document.createElement('section');s.className='panel';s.dataset.liveReport='true';s.innerHTML=`<h3>${name}</h3><p>${rows.length} records loaded (maximum 100).</p><div style="overflow:auto"><table><tbody>${rows.map(r=>'<tr><td>'+esc(JSON.stringify(r))+'</td></tr>').join('')}</tbody></table></div>`;$('overview').append(s);}
  message('Live read-only operations. Counts show up to 100 loaded records. Financial approval, moderation, refunds and payouts are awaiting verified transactional workflows.');
  }else{
  const [ps,orders,categories,reports]=await Promise.all([api('merchant/products'),api('merchant/orders'),api('categories'),api('merchant/reports')]);products=ps;
