@@ -56,3 +56,18 @@ Proceed with authorized read-only inspection, coding, tests and reversible nonpr
 Maintain source/architecture report, four independent builds, backend/payment implementation evidence, DNS/SSL/mailbox verification, CI/staging evidence, completed/pending/blocked matrix and required approvals. Current decision: **NOT READY FOR PRODUCTION**. Re-evaluate only after the actual acceptance gates pass, then request the owner's final explicit release approval.
 
 Mobile deployment note: a protected project now exists with preview-only variables. Vercel labeled its first staging request as production, so it was canceled before READY. Automatic approval review rejected a retry without an explicit target. Correct preview targeting must be established before another mobile deployment.
+
+## Verified staging and dependency checkpoint — 2026-11-09
+
+Commit 4fbc71f5b813bcc1e2bfafdcfef109ef60e547c8 passed GitHub CI run 42647640020: 74 unit/API/build checks, all four surface builds, and 11 browser scenarios. Browser artifact 13687778776 preserves screenshots and results. Authenticated private-role E2E remains blocked; browser fixtures are not backend acceptance.
+
+Staging-only deployments at this commit:
+- Marketplace: https://kristova-m4sndgjkp-crevantiqofficials-2195.vercel.app
+- Merchant: https://kristiva-merchant-psk8k5n2w-crevantiqofficials-2195.vercel.app
+- Admin: https://kristiva-admin-qfl54frcw-crevantiqofficials-2195.vercel.app
+
+Actual staging requests verified public catalogue 200 and cross-surface nested API requests 403 after explicit routing repair. Protected private-route fetches can return Vercel authentication errors and do not establish application-role acceptance.
+
+Compatible lockfile updates remove the critical dependency advisory. After updates, local 74 checks, all four builds and legacy Astro build pass. npm audit still reports six findings: five high and one low, affecting the legacy Wrangler/Miniflare tooling chain and ws. These remain release blockers requiring further compatibility validation. Staging above predates this dependency-only update; use exact-commit CI for its validation.
+
+Namecheap secure login and OTP were attempted, but a fresh account page still redirects to login. Domain ownership, cPanel mailbox and send/receive remain unverified. Public DNS still resolves to Namecheap forwarding records; forwarding is not proof of a mailbox. No live DNS, ownership, payment or production release was performed.
