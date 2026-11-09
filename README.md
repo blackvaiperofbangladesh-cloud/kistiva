@@ -1,51 +1,18 @@
-# Astro + React + Webflow Cloud
+# KRISTIVA
 
-Example [Astro](https://astro.build) app with React islands and the Cloudflare adapter, set up for [Webflow Cloud](https://webflow.com/cloud).
+Four independently built web surfaces sharing one Supabase backend. The approved dark marketplace design is preserved under `design-reference`. This is an incomplete, gated implementation: **not ready for production**.
 
-[![Deploy to Webflow](https://webflow.com/img/deploy-dark.svg)](https://webflow.com/dashboard/cloud/deploy?repo=https://github.com/Webflow-Examples/hello-world-astro)
+| Surface | Build | Local port |
+| --- | --- | --- |
+| Marketplace | `npm run build:marketplace` | 4173 |
+| Mobile web | `npm run build:mobile` | 4174 |
+| Merchant | `npm run build:merchant` | 4175 |
+| Admin | `npm run build:admin` | 4176 |
 
-## Project structure
+Use Node 24, `npm ci --ignore-scripts`, `npm test`, and `npm run build`. Start one surface with `PORT=4175 node scripts/serve.mjs merchant` after building it. Browser verification uses `npm run test:browser`; install Chromium with `npx playwright install chromium` on a supported runner. Optional `PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH` selects an installed browser. The test runner starts four local servers.
 
-```text
-.
-├── astro.config.mjs
-├── package.json
-├── package-lock.json
-├── public/
-│   ├── .assetsignore
-│   ├── favicon.svg
-│   └── webflow.svg
-├── src/
-│   ├── env.d.ts
-│   ├── layouts/
-│   │   └── Layout.astro
-│   ├── lib/
-│   │   └── counter.ts
-│   ├── pages/
-│   │   ├── api/
-│   │   │   └── hello.ts
-│   │   └── index.astro
-│   └── styles/
-│       └── global.css
-├── tsconfig.json
-├── webflow.json
-├── wrangler.json
-└── worker-configuration.d.ts
-```
+Browser tests separate live public-catalogue smoke checks from explicitly labeled isolated UI fixtures. Fixture success never proves a real payment, authenticated database isolation, email delivery, provider integration or fulfillment transaction. No test creates production orders or charges money.
 
-## Commands
+See [Master execution v2.1](docs/MASTER_EXECUTION_V2.md), [execution evidence and blockers](docs/EXECUTION.md), and [deployment instructions](docs/DEPLOYMENT.md). Preserve the v1 foundation and open draft PR #1. Current continuation branch: `build/kristiva-execution-v2`.
 
-| Command | Action |
-| :------ | :----- |
-| `npm install` | Installs dependencies |
-| `npm run dev` | Starts the Astro dev server at `http://localhost:4321` |
-| `npm run build` | Builds the production site |
-| `npm run preview` | Runs `astro build` then `wrangler dev` for a local preview |
-| `npm run deploy` | Deploys with `webflow cloud deploy` |
-| `npm run astro` | Runs the Astro CLI (e.g. `astro add`, `astro check`) |
-| `npm run cf-typegen` | Generates Wrangler TypeScript types (`wrangler types`) |
-
-## Learn more
-
-- [Astro documentation](https://docs.astro.build)
-- [Webflow Cloud](https://webflow.com/cloud)
+Both checkout activation flags default to false. Do not activate payments, change production DNS/schema, merge protected branches or deploy to production without the required approval and acceptance evidence. Credentials belong only in secure provider settings, never source files or chat. The legacy Astro starter remains available under `src` and `build:legacy`.

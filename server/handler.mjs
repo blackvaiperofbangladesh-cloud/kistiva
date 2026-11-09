@@ -1,5 +1,5 @@
 import {authorize,normalizeItems,paymentMethod,PROJECT_REF,validateCryptoEvidence} from '../shared/commerce.mjs';
-class Failure extends Error{constructor(status,message){super(message);this.status=status;}}
+import {HttpFailure as Failure,readJson} from './request.mjs';
 const requireValue=(value,message)=>{if(!value)throw new Failure(400,message);return value;};
 const uuid=x=>typeof x==='string'&&/^[a-f\d]{8}-[a-f\d]{4}-[a-f\d]{4}-[a-f\d]{4}-[a-f\d]{12}$/i.test(x);
 const text=(x,max=500)=>typeof x==='string'?x.trim().slice(0,max):'';
@@ -15,7 +15,8 @@ export async function handle(request,env=process.env,transport=fetch){
   if(!known.includes(route))throw new Failure(404,'Route not found');
   if(route.startsWith('admin/')&&app!=='admin'||route.startsWith('merchant/')&&app!=='merchant')throw new Failure(403,'Application access denied');
   const reads=new Set(['health','catalog','categories','me','orders','notifications','payment/instructions','merchant/profile','merchant/orders','merchant/reports','admin/users','admin/merchants','admin/products','admin/orders','admin/payments','admin/audit','admin/shipments','admin/reports']);
-  if(reads.has(route)&&request.method!=='GET'||!reads.has(route)&&route!=='merchant/products'&&route!=='profile'&&request.method!=='POST')throw new Failure(405,'Method not allowed');
+  const allowed=route==='profile'?['GET','POST','PATCH']:['merchant/products','support'].includes(route)?['GET','POST']:route==='notifications'?['GET','PATCH']:reads.has(route)?['GET']:['POST'];
+  if(!allowed.includes(request.method))throw new Failure(405,'Method not allowed');
   const enabled=env.KRISTIVA_PAYMENTS_ENABLED==='true'&&env.KRISTIVA_BACKEND_V2_VERIFIED==='true';
   if(route==='health')return reply({app,projectRef:PROJECT_REF,paymentsEnabled:enabled,releaseGate:'verification_required'});
   const base=env.SUPABASE_URL||`https://${PROJECT_REF}.supabase.co`,key=env.SUPABASE_PUBLISHABLE_KEY;
@@ -43,8 +44,9 @@ export async function handle(request,env=process.env,transport=fetch){
   const own=`customer_id=eq.${encodeURIComponent(user.id)}`;
   if(route==='me')return reply({user:{id:user.id,email:user.email},profile:(await rest('profiles',`id=eq.${user.id}&select=id,full_name,phone,account_status`))?.[0]});
   if(route==='orders')return reply(await rest('orders',`${own}&select=id,order_number,status,currency,grand_total,placed_at,order_items(product_name,quantity,line_total),shipments(carrier,tracking_number,status)&order=placed_at.desc&limit=100`));
-  if(route==='notifications')return reply(await rest('customer_notifications',`user_id=eq.${user.id}&select=id,title,message,read_at,created_at&order=created_at.desc&limit=50`));
+  if(route==='notifications'&&request.method==='GET')return reply(await rest('customer_notifications',`user_id=eq.${user.id}&select=id,title,message,read_at,created_at&order=created_at.desc&limit=50`));
   if(route==='profile'&&request.method==='GET')return reply((await rest('profiles',`id=eq.${user.id}&select=id,full_name,phone,account_status`))?.[0]);
+  if(route==='support'&&request.method==='GET')return reply(await rest('support_disputes',`${own}&select=id,order_id,subject,category,status,created_at,reviewed_at&order=created_at.desc&limit=100`));
   if(route==='merchant/profile')return reply(seller);
   if(route==='merchant/products'&&request.method==='GET')return reply(await rest('products',`seller_id=eq.${seller.id}&select=id,name,sku,price,currency,stock_quantity,status,category_id,description&order=created_at.desc&limit=100`));
   if(route==='merchant/orders')return reply(await rest('order_items',`seller_id=eq.${seller.id}&select=id,product_name,quantity,line_total,order_id,orders(order_number,status,placed_at)&order=created_at.desc&limit=100`));
@@ -53,21 +55,22 @@ export async function handle(request,env=process.env,transport=fetch){
   if(adminTables[route])return reply(await rest(adminTables[route],'select=*&limit=100'));
   if(route==='admin/reports')return reply({commissions:await rest('seller_commissions','select=*&limit=100'),payouts:await rest('seller_payouts','select=*&limit=100')});
   if(route==='checkout'&&!enabled)throw new Failure(503,'Checkout is awaiting verified payment activation');
-  const raw=await request.text();if(raw.length>65536)throw new Failure(413,'Request too large');
-  let body;try{body=JSON.parse(raw||'{}');}catch{throw new Failure(400,'Invalid JSON');}
+  const body=await readJson(request);
+  if(route==='notifications'){requireValue(uuid(body.id),'Invalid notification');return reply(await rest('customer_notifications',`id=eq.${body.id}&user_id=eq.${encodeURIComponent(user.id)}&read_at=is.null`,'PATCH',{read_at:new Date().toISOString()}));}
   if(route==='profile')return reply(await rest('profiles',`id=eq.${user.id}`,'PATCH',{full_name:requireValue(text(body.full_name,100),'Name required'),phone:text(body.phone,30)}));
   if(route==='support'){
    if(body.order_id){requireValue(uuid(body.order_id),'Invalid order');const o=await rest('orders',`id=eq.${body.order_id}&${own}&select=id`);if(!o?.length)throw new Failure(403,'Order access denied');}
    return reply(await rest('support_disputes','','POST',{customer_id:user.id,subject:requireValue(text(body.subject,150),'Subject required'),details:requireValue(text(body.description,3000),'Details required'),category:body.category==='return'?'return':'support',...(body.order_id?{order_id:body.order_id}:{}),status:'submitted'}),201);
   }
   if(route==='merchant/products'){
-   requireValue(Number.isFinite(body.price)&&body.price>0,'Valid price required');requireValue(Number.isInteger(body.stock_quantity)&&body.stock_quantity>=0,'Valid stock required');
+   requireValue(Number.isFinite(body.price)&&body.price>0&&Number.isSafeInteger(Math.round(body.price*100))&&Math.abs(body.price*100-Math.round(body.price*100))<1e-6,'Price must use at most two decimal places');requireValue(Number.isSafeInteger(body.stock_quantity)&&body.stock_quantity>=0&&body.stock_quantity<=2147483647,'Valid stock required');
+   if(body.category_id)requireValue(uuid(body.category_id),'Invalid category');
    const name=requireValue(text(body.name,150),'Product name required');
    const payload={name,description:text(body.description,3000),price:body.price,sku:text(body.sku,100)||null,status:'draft',category_id:body.category_id||null};
    if(body.id){requireValue(uuid(body.id),'Invalid product');return reply(await rest('products',`id=eq.${body.id}&seller_id=eq.${seller.id}`,'PATCH',payload));}
    return reply(await rest('products','','POST',{...payload,currency:'BDT',seller_id:seller.id,stock_quantity:body.stock_quantity,slug:name.toLowerCase().replace(/[^a-z0-9]+/g,'-').slice(0,80)+'-'+crypto.randomUUID().slice(0,8)}),201);
   }
-  if(route==='merchant/inventory'){requireValue(uuid(body.product_id),'Invalid product');requireValue(Number.isInteger(body.delta)&&body.delta!==0,'Valid quantity required');return reply(await rpc('merchant_adjust_inventory',{p_product_id:body.product_id,p_quantity_delta:body.delta,p_reason:text(body.reason,250)}));}
+  if(route==='merchant/inventory'){requireValue(uuid(body.product_id),'Invalid product');requireValue(Number.isSafeInteger(body.delta)&&body.delta!==0&&Math.abs(body.delta)<=2147483647,'Valid quantity required');const reason=requireValue(text(body.reason,250),'Inventory adjustment reason required');return reply(await rpc('merchant_adjust_inventory',{p_product_id:body.product_id,p_quantity_delta:body.delta,p_reason:reason}));}
   // Financial and privileged writes use audited transactional RPCs, never client table patches.
   // These routes stay closed until the staging database contract has passed its release gate.
   if(env.KRISTIVA_BACKEND_V2_VERIFIED!=='true')throw new Failure(503,'This operation requires verified backend migration');

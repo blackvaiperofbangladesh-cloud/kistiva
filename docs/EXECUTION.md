@@ -112,3 +112,13 @@ Namecheap account navigation reached its sign-in screen. No authenticated regist
 
 
 Public DNS-over-HTTPS verification succeeded after native DNS was refused. Both kristiva.com and kristiva.store use dns1/dns2.registrar-servers.com. Observed apex A records are 192.64.119.50 and 162.255.119.165 respectively. Both publish eforward*.registrar-servers.com MX records and an SPF record including spf.efwd.registrar-servers.com. These records indicate forwarding configuration, not proof of a support mailbox or send/receive readiness. Registrar login and email service entitlement remain required before changing records. Existing MX/TXT values must be preserved until the intended email provider is verified.
+
+## v2 continuation
+
+Owner supplied Master Build Execution v2.0. The additional gates and actual execution matrix are in MASTER_EXECUTION_V2.md (v2.1). Continued from remote checkpoint 84fd858 on a dedicated build/kristiva-execution-v2 branch; PR #1 remains open and unmerged.
+
+Added own support history and notification acknowledgement; neither exposes support admin notes nor accepts client notification content/ownership fields. Added byte-bounded streaming request parsing with invalid UTF-8/object-shape rejection; safe merchant stock/category/price checks and nonempty inventory audit reasons. Portal forms now associate labels with controls, admin report refresh removes previous generated reports, and customer dialogs trap keyboard focus and restore focus on close. Approved marketplace CSS is unchanged.
+
+Fresh public DNS queries still show registrar-servers.com nameservers, registrar forwarding MX records and forwarding SPF for both KRISTIVA domains. This does not verify mailbox creation or account transfer. No DNS changes were made. Current browser session has no tabs; old cPanel login cannot be reused. Supabase list_branches returned an empty list. The live database is preserved: no migrations or test transactions were applied.
+
+Local checks: 61 unit/API/build tests passed, all four builds completed. Eleven browser scenarios are configured, including eight isolated fixture regressions and three existing smoke scenarios. Local Chromium cannot launch (socket Operation not permitted); one HTTP-only test passed locally. Browser outcomes must be taken from the exact-commit CI run, not the number of scenarios discovered.
