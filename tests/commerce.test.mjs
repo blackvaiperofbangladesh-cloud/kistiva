@@ -1,0 +1,14 @@
+import test from 'node:test';import assert from 'node:assert/strict';
+const commerce=await import('../shared/commerce.mjs').catch(()=>({}));
+const must=(name,...args)=>{assert.equal(typeof commerce[name],'function',`${name} missing`);return commerce[name](...args)};
+test('duplicate cart lines aggregate before inventory validation',()=>{assert.deepEqual(must('normalizeItems',[{product_id:'5e9efd64-3d01-41dd-bf9c-3cba6abfed5e',quantity:2},{product_id:'5e9efd64-3d01-41dd-bf9c-3cba6abfed5e',quantity:3}]),[{product_id:'5e9efd64-3d01-41dd-bf9c-3cba6abfed5e',quantity:5}])});
+for(const q of [0,-1,1.1,NaN,26,'1'])test(`reject invalid quantity ${q}`,()=>assert.throws(()=>must('normalizeItems',[{product_id:'5e9efd64-3d01-41dd-bf9c-3cba6abfed5e',quantity:q}]),/quantity/));
+test('Bangladesh permits bKash only',()=>{assert.equal(must('paymentMethod','BD',{cryptoCountries:['BD','US']}),'bkash')});
+test('foreign crypto requires explicit approved country',()=>{assert.equal(must('paymentMethod','US',{cryptoCountries:['US']}),'manual_crypto');assert.throws(()=>must('paymentMethod','GB',{cryptoCountries:['US']}),/unavailable/)});
+test('free text country cannot bypass jurisdiction gate',()=>assert.throws(()=>must('paymentMethod','Bangladesh',{cryptoCountries:['US']}),/country/));
+test('client metadata cannot confer admin role',()=>{assert.throws(()=>must('authorize','admin',{id:'u',user_metadata:{role:'admin'},app_metadata:{}},null,false),/denied/)});
+test('merchant requires approved live merchant profile',()=>{assert.throws(()=>must('authorize','merchant',{id:'u'},{user_id:'u',status:'pending',deposit_status:'verified'},false),/denied/);assert.equal(must('authorize','merchant',{id:'u'},{user_id:'u',status:'approved',deposit_status:'verified',removed_at:null},false),true)});
+test('removed merchant rejected',()=>assert.throws(()=>must('authorize','merchant',{id:'u'},{user_id:'u',status:'approved',deposit_status:'verified',removed_at:'2026-01-01'},false),/denied/));
+test('payment never approves with incomplete chain evidence',()=>{const e={recipientMatches:true,networkMatches:true,amountMatches:true,confirmations:12,requiredConfirmations:12,unique:true};assert.equal(must('validateCryptoEvidence',e),true);for(const key of ['recipientMatches','networkMatches','amountMatches','unique'])assert.throws(()=>must('validateCryptoEvidence',{...e,[key]:false}),/verification/);assert.throws(()=>must('validateCryptoEvidence',{...e,confirmations:11}),/confirmation/)});
+test('payment transitions forbid unpaid shipment and refund without paid state',()=>{assert.throws(()=>must('orderTransition','awaiting_payment','shipped',false),/transition/);assert.equal(must('orderTransition','confirmed','processing',true),'processing');assert.throws(()=>must('orderTransition','delivered','refunded',false),/payment/)});
+test('escape untrusted product names',()=>assert.equal(must('escapeHtml','<img src=x onerror="x">'), '&lt;img src=x onerror=&quot;x&quot;&gt;'));
