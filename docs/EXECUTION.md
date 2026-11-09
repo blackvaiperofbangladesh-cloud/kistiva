@@ -96,3 +96,19 @@ Local browser launch was attempted twice. Installed Playwright browser was missi
 7. Explicit approval is required for production, financial activation, domain changes or destructive changes. No production release is requested while gates remain open.
 
 Staging marketplace deployment dpl_6xvDyWqx5v7giFfiMBmYva5e1nNi was built from f6b7af7. Its /api/health returned the correct projectRef and paymentsEnabled=false; /api/catalog returned HTTP 200 with one product. Preview-only runtime variables were configured; production variables were not changed. Branch-specific env configuration was unavailable because the Vercel project has no persistent Git link, so the preview target was used. No automatic Git-to-Vercel deployment or production promotion was enabled.
+
+
+## Resumed verification — 2026-11-09
+
+Continued the existing build/kristiva-execution-v1 branch and draft PR #1, rather than replacing the recovered design. Vercel staging metadata points to commit 6765e3d2f7beae715484b63004bf7de76a4bfbdb for the marketplace. Marketplace, merchant and admin staging deployments are READY; deployment source-tree retrieval returned 404, so the matching Git branch is the editable source.
+
+API hardening now denies every authenticated private-data route when the account profile is missing or suspended, including merchant and admin reads. Previously only writes checked account_status. This is defense at the shared API boundary; direct Supabase access still needs independent database enforcement. Checkout readiness now requires both the payments and verified-backend flags, preventing health/UI from advertising activation with only one flag set. Six regression scenarios cover these cases.
+
+Validation after incorporating the concurrent UUID-canonicalization commit: 41 domain/API/build tests passed, and all four apps built independently on Node 24.22.1 after installing the lockfile dependencies. Local browser execution remains blocked: bundled Chromium is absent, its download was truncated, and the installed system Chromium fails with socket() Operation not permitted. The HTTP-only financial-gate browser-runner test passed; no local visual pass is claimed. Playwright accepts an optional PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH for environments with a working installed browser.
+
+Fresh read-only database inspection confirms that anon has SELECT permission on products.cost_price. Row policies permit published product reads, so internal pricing needs column-grant hardening before release. checkout_create_order remains SECURITY DEFINER and lacks active-account enforcement, country/payment validation and idempotency. The advisor warnings about anonymous authenticated users are review signals; they do not alone prove an authorization bypass. Current is_admin checks trusted app_metadata plus the configured owner identity, not user_metadata.
+
+Namecheap account navigation reached its sign-in screen. No authenticated registrar session is available; ownership, purchased email entitlement, DNS records and mailbox creation are unverified. No DNS or mailbox changes were made. Native DNS queries were refused in this executor, so they establish no domain state. No production deployment, database migration, payment activation or financial transaction was performed.
+
+
+Public DNS-over-HTTPS verification succeeded after native DNS was refused. Both kristiva.com and kristiva.store use dns1/dns2.registrar-servers.com. Observed apex A records are 192.64.119.50 and 162.255.119.165 respectively. Both publish eforward*.registrar-servers.com MX records and an SPF record including spf.efwd.registrar-servers.com. These records indicate forwarding configuration, not proof of a support mailbox or send/receive readiness. Registrar login and email service entitlement remain required before changing records. Existing MX/TXT values must be preserved until the intended email provider is verified.

@@ -16,7 +16,7 @@ export async function handle(request,env=process.env,transport=fetch){
   if(route.startsWith('admin/')&&app!=='admin'||route.startsWith('merchant/')&&app!=='merchant')throw new Failure(403,'Application access denied');
   const reads=new Set(['health','catalog','categories','me','orders','notifications','payment/instructions','merchant/profile','merchant/orders','merchant/reports','admin/users','admin/merchants','admin/products','admin/orders','admin/payments','admin/audit','admin/shipments','admin/reports']);
   if(reads.has(route)&&request.method!=='GET'||!reads.has(route)&&route!=='merchant/products'&&route!=='profile'&&request.method!=='POST')throw new Failure(405,'Method not allowed');
-  const enabled=env.KRISTIVA_PAYMENTS_ENABLED==='true';
+  const enabled=env.KRISTIVA_PAYMENTS_ENABLED==='true'&&env.KRISTIVA_BACKEND_V2_VERIFIED==='true';
   if(route==='health')return reply({app,projectRef:PROJECT_REF,paymentsEnabled:enabled,releaseGate:'verification_required'});
   const base=env.SUPABASE_URL||`https://${PROJECT_REF}.supabase.co`,key=env.SUPABASE_PUBLISHABLE_KEY;
   if(base!==`https://${PROJECT_REF}.supabase.co`||!key?.startsWith('sb_publishable_'))throw new Failure(503,'Backend configuration unavailable');
@@ -32,6 +32,8 @@ export async function handle(request,env=process.env,transport=fetch){
   if(route==='categories')return reply(await rest('categories','select=id,name,slug&is_active=eq.true&order=sort_order'));
   if(!token?.startsWith('Bearer ')||token.length<8)throw new Failure(401,'Sign in required');
   const user=await backend('/auth/v1/user');if(!user?.id||user.is_anonymous)throw new Failure(401,'Verified customer sign-in required');
+  const account=(await rest('profiles',`id=eq.${encodeURIComponent(user.id)}&select=account_status&limit=1`))?.[0];
+  if(account?.account_status!=='active')throw new Failure(403,'Active account required');
   let seller=null,isAdmin=false;
   if(route.startsWith('admin/')){isAdmin=await rpc('is_admin');try{authorize('admin',user,null,isAdmin);}catch{throw new Failure(403,'Access denied');}}
   if(route.startsWith('merchant/')){
@@ -53,8 +55,6 @@ export async function handle(request,env=process.env,transport=fetch){
   if(route==='checkout'&&!enabled)throw new Failure(503,'Checkout is awaiting verified payment activation');
   const raw=await request.text();if(raw.length>65536)throw new Failure(413,'Request too large');
   let body;try{body=JSON.parse(raw||'{}');}catch{throw new Failure(400,'Invalid JSON');}
-  const profile=(await rest('profiles',`id=eq.${user.id}&select=account_status&limit=1`))?.[0];
-  if(profile?.account_status!=='active')throw new Failure(403,'Active account required');
   if(route==='profile')return reply(await rest('profiles',`id=eq.${user.id}`,'PATCH',{full_name:requireValue(text(body.full_name,100),'Name required'),phone:text(body.phone,30)}));
   if(route==='support'){
    if(body.order_id){requireValue(uuid(body.order_id),'Invalid order');const o=await rest('orders',`id=eq.${body.order_id}&${own}&select=id`);if(!o?.length)throw new Failure(403,'Order access denied');}
