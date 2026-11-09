@@ -1,0 +1,6 @@
+/* Preserve the recovered layout/palette while fixing inherited dark-on-dark text. */
+.product .pbody h3,.feature strong{color:#f2f5ff}
+.product .price{color:#57d5ff}
+.kst-auth-tabs button:not(.active),.close{color:#17213a}
+button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible{outline:3px solid #57d5ff;outline-offset:3px}
+button:disabled{cursor:not-allowed;opacity:.6}

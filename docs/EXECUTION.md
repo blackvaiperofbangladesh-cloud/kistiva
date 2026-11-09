@@ -51,7 +51,9 @@ Unit tests exercise real domain/handler logic with injected provider responses w
 
 Read-only RLS probe ran a transaction under authenticated with an unrelated UUID and forged user_metadata.role=admin: is_admin=false, visible profiles=0, payments=0, audit logs=0. The transaction rolled back. This proves this narrow database scenario only; customer-to-customer, merchant-to-merchant, Storage and privileged mutation isolation remain unverified.
 
-Local browser launch was attempted twice. Installed Playwright browser was missing; system Chromium then failed with `socket() failed: Operation not permitted`. Browser testing is also configured in GitHub CI, where a Chromium browser is installed on the runner. No local visual or E2E pass is claimed.
+GitHub CI run 42602712617 completed successfully: 33 domain/API/build tests, all four independent app builds, and 3 browser tests. The browser catalogue contained one out-of-stock product, so an in-stock cart path and completed checkout were NOT proven. Desktop/mobile CI screenshots were inspected; an inherited dark-text contrast issue and obsolete demo/installment copy were corrected without editing the original CSS.
+
+Local browser launch was attempted twice. Installed Playwright browser was missing; system Chromium then failed with `socket() failed: Operation not permitted`. Browser testing is also configured in GitHub CI, where a Chromium browser is installed on the runner. No local visual or E2E pass is claimed. The downloaded headless browser also failed installation with a truncated archive. CI screenshots and tests provide the available browser evidence.
 
 ## Release gate
 
@@ -60,13 +62,13 @@ Local browser launch was attempted twice. Installed Playwright browser was missi
 | Original UI source recovered and all original CSS retained | PASS at source level; pixel fidelity pending |
 | Independent app builds | PASS locally |
 | Domain/API regression tests | PASS locally |
-| GitHub CI and browser execution | See current PR checks; never infer from local build |
+| GitHub CI and browser execution | PASS for checkpoint f6b7af7; see current PR checks for subsequent commits |
 | Complete role isolation | Narrow read-only probe passed; full suite pending |
 | Customer checkout and verified payments | BLOCKED; disabled |
 | Merchant/admin full operations | PARTIAL; read integration and selected merchant writes prepared |
 | Refunds, delivery transitions, settlement reconciliation | PENDING |
 | Brevo/Sentry configuration | PENDING; no service credentials verified |
-| Staging verification | PENDING |
+| Staging verification | Marketplace preview health/catalogue HTTP 200 observed; complete workflows pending |
 | Production smoke tests | NOT RUN; production untouched |
 
 ## Next executable dependencies
@@ -78,3 +80,5 @@ Local browser launch was attempted twice. Installed Playwright browser was missi
 5. Complete merchant onboarding/moderation, order/refund/delivery/settlement operations with authoritative business terms; verify with independent customer/merchant/admin staging accounts.
 6. Configure Brevo sender, Sentry and delivery provider, then run provider/retry/refund/settlement/E2E tests.
 7. Explicit approval is required for production, financial activation, domain changes or destructive changes. No production release is requested while gates remain open.
+
+Staging marketplace deployment dpl_6xvDyWqx5v7giFfiMBmYva5e1nNi was built from f6b7af7. Its /api/health returned the correct projectRef and paymentsEnabled=false; /api/catalog returned HTTP 200 with one product. Preview-only runtime variables were configured; production variables were not changed. Branch-specific env configuration was unavailable because the Vercel project has no persistent Git link, so the preview target was used. No automatic Git-to-Vercel deployment or production promotion was enabled.

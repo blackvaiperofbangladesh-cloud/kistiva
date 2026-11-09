@@ -1,5 +1,5 @@
 import {test,expect} from '@playwright/test';
-test('approved dark storefront, real catalogue and cart remain usable',async({page})=>{
+test('approved dark storefront, real catalogue and stock controls remain usable',async({page})=>{
  const errors=[];page.on('pageerror',e=>errors.push(e.message));await page.goto('/');
  await expect(page.locator('.hero')).toBeVisible();
  await expect(page.locator('body')).toHaveCSS('background-color','rgb(8, 10, 18)');
@@ -8,6 +8,7 @@ test('approved dark storefront, real catalogue and cart remain usable',async({pa
  await expect(page.locator('.product')).toHaveCount(products.length);
  const available=products.find(p=>p.stock_quantity>0);
  if(available){await page.locator(`[data-add="${available.id}"]`).click();await expect(page.locator('#cartCount')).toHaveText('1');await page.locator('#cartBtn').click();await expect(page.locator('#cartItems')).toContainText(available.name);await page.locator('[data-delta="-1"]').click();await expect(page.locator('#cartCount')).toHaveText('0');}
+ if(!available){await expect(page.locator('[data-add]')).toBeDisabled();}
  await page.screenshot({path:'test-results/marketplace-desktop.png',fullPage:true});
  expect(errors).toEqual([]);
 });
