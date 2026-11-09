@@ -2,6 +2,20 @@
 
 Checkpoint: 2026-11-09. Production release gate: CLOSED.
 
+## Follow-up audit and implementation, 2026-11-09
+
+The owner has now explicitly authorized DNS and support@kristiva.com setup, while retaining approval before production deployment. Earlier statements below requiring separate DNS authorization are superseded by that instruction. Switching a domain to the new application remains part of the production release gate.
+
+Verified the three marketplace/merchant/admin staging deployments are READY at commit 6765e3d2f7beae715484b63004bf7de76a4bfbdb on build/kristiva-execution-v1. The default main branch remains the legacy starter. Continued this existing branch; did not restart or overwrite the approved UI.
+
+Fixed a reproduced cart-validation bypass: PostgreSQL UUIDs are case-insensitive, but cart aggregation used case-sensitive Map keys. Mixed-case IDs could split the same product into multiple lines and evade the per-product limit. Canonical lowercase IDs now aggregate before quantity validation. Two new regression tests failed before the fix and passed afterwards.
+
+Fresh validation: npm ci --ignore-scripts succeeded; all 35 domain/API/build tests passed; all four application builds passed. Original storefront CSS preservation test passed. Browser suite: financial gate check passed, two UI tests could not launch because the Playwright browser is absent. A system Chromium fallback also failed with socket() Operation not permitted. These are environment failures, not successful UI verification.
+
+Supabase remains ACTIVE_HEALTHY; all 35 public tables have RLS enabled. Read-only policy/function inspection reconfirmed audit_logs_admin_manage allows ALL operations for admins, merchant product policies do not enforce draft-only changes, and checkout_create_order is SECURITY DEFINER without idempotency, payment-country policy or suspended-account checks. No production schema/data changes were made. Advisor warnings include anonymous-auth policy access and disabled leaked-password protection; policy warnings alone are not proof of unauthorized disclosure.
+
+Namecheap domain-list navigation redirected to its sign-in page. No authenticated registrar session is available; domain ownership, current DNS and mailbox entitlement remain unverified. Runtime DNS queries also failed with ECONNREFUSED, so no DNS values are asserted. No mailbox was created, and no records were changed. Next registrar dependency is owner sign-in; next backend dependency is a recoverable backup and isolated staging database, plus the payment-provider configuration and business decisions listed below. No production deployment was performed.
+
 ## Source authority and recovery
 
 Repository: blackvaiperofbangladesh-cloud/kistiva. Inspected baseline: 23fdb32f5c0dff27c55840e8dc423809b9144208. This is an Astro/Webflow starter with no marketplace implementation. The existing starter remains intact under src; `build:legacy` reproduces its build. The new independently built applications live under apps.

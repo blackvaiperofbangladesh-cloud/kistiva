@@ -1,6 +1,14 @@
 import test from 'node:test';import assert from 'node:assert/strict';
 const commerce=await import('../shared/commerce.mjs').catch(()=>({}));
 const must=(name,...args)=>{assert.equal(typeof commerce[name],'function',`${name} missing`);return commerce[name](...args)};
+test('UUID casing cannot split one product across cart lines',()=>{
+ const id='5e9efd64-3d01-41dd-bf9c-3cba6abfed5e';
+ assert.deepEqual(must('normalizeItems',[{product_id:id,quantity:2},{product_id:id.toUpperCase(),quantity:3}]),[{product_id:id,quantity:5}]);
+});
+test('mixed-case duplicate UUIDs cannot bypass aggregate quantity limit',()=>{
+ const id='5e9efd64-3d01-41dd-bf9c-3cba6abfed5e';
+ assert.throws(()=>must('normalizeItems',[{product_id:id,quantity:20},{product_id:id.toUpperCase(),quantity:20}]),/aggregate quantity/);
+});
 test('duplicate cart lines aggregate before inventory validation',()=>{assert.deepEqual(must('normalizeItems',[{product_id:'5e9efd64-3d01-41dd-bf9c-3cba6abfed5e',quantity:2},{product_id:'5e9efd64-3d01-41dd-bf9c-3cba6abfed5e',quantity:3}]),[{product_id:'5e9efd64-3d01-41dd-bf9c-3cba6abfed5e',quantity:5}])});
 for(const q of [0,-1,1.1,NaN,26,'1'])test(`reject invalid quantity ${q}`,()=>assert.throws(()=>must('normalizeItems',[{product_id:'5e9efd64-3d01-41dd-bf9c-3cba6abfed5e',quantity:q}]),/quantity/));
 test('Bangladesh permits bKash only',()=>{assert.equal(must('paymentMethod','BD',{cryptoCountries:['BD','US']}),'bkash')});

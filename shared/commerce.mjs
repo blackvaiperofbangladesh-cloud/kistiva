@@ -6,7 +6,8 @@ export function normalizeItems(items){
  for(const i of items){
   if(!i||!/^\w{8}-\w{4}-\w{4}-\w{4}-\w{12}$/.test(i.product_id)||!/^[a-f\d-]+$/i.test(i.product_id))throw new Error('Invalid product');
   if(!Number.isInteger(i.quantity)||i.quantity<1||i.quantity>25)throw new Error('Invalid quantity');
-  const n=(quantities.get(i.product_id)||0)+i.quantity;if(n>25)throw new Error('Invalid aggregate quantity');quantities.set(i.product_id,n);
+  const productId=i.product_id.toLowerCase();
+  const n=(quantities.get(productId)||0)+i.quantity;if(n>25)throw new Error('Invalid aggregate quantity');quantities.set(productId,n);
  }
  if([...quantities.values()].reduce((a,b)=>a+b,0)>100)throw new Error('Cart quantity limit exceeded');
  return [...quantities].sort(([a],[b])=>a.localeCompare(b)).map(([product_id,quantity])=>({product_id,quantity}));
