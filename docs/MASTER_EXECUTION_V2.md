@@ -11,7 +11,7 @@ Backend: Supabase imtlvvninxwvxhzydjqa. No unrelated project source, credentials
 | Surface | Source | Existing deployment target |
 | --- | --- | --- |
 | Customer marketplace | apps/marketplace | kristova |
-| Customer mobile web experience | apps/mobile | Independent build; separate deployment project not provisioned |
+| Customer mobile web experience | apps/mobile | kristiva-mobile (protected; deployment blocked) |
 | Merchant portal | apps/merchant | kristiva-merchant |
 | Admin control center | apps/admin | kristiva-admin |
 
@@ -47,10 +47,12 @@ Proceed with authorized read-only inspection, coding, tests and reversible nonpr
 - GitHub checkpoint 84fd858 has successful CI and open draft PR #1. Existing marketplace/admin/merchant staging deployments are READY, but metadata points to older work; they do not prove current continuation behavior.
 - Supabase is ACTIVE_HEALTHY; 35 public tables have RLS enabled. No Supabase development branch exists. Current security advisors still require review, including privileged checkout and anonymous authenticated-user policies.
 - Added customer-owned support history and notification acknowledgement through narrow server filters; bounded streaming JSON parsing and object validation; merchant price/category/stock validation; required inventory audit reasons; accessible portal labels and keyboard dialog focus; admin report refresh cleanup.
-- Unit/API/build checks currently pass 61 tests. Browser checks include actual public-catalogue smoke tests plus separately labeled fixture regressions for all four surfaces. Local Chromium fails to launch in this executor; rely on completed CI runs for browser pass evidence and report failures rather than counting discovered tests as passed.
+- Unit/API/build checks currently pass 74 tests. Browser checks include actual public-catalogue smoke tests plus separately labeled fixture regressions for all four surfaces. Local Chromium fails to launch in this executor; rely on completed CI runs for browser pass evidence and report failures rather than counting discovered tests as passed.
 - No active browser tabs/authenticated Namecheap session remain in this execution. Domain transfer, cPanel domain/mailbox, DNS edits and actual send/receive are not independently verified here. Do not overwrite the owner's newer setup based on old DNS observations.
 - Backend migration/restore, provider sandbox credentials and commercial/jurisdiction settings, independent role test accounts, complete fulfillment/refunds/payouts and provider reconciliation remain external or implementation gates. No live provider workflow has passed.
 
 ## Required deliverables and readiness decision
 
 Maintain source/architecture report, four independent builds, backend/payment implementation evidence, DNS/SSL/mailbox verification, CI/staging evidence, completed/pending/blocked matrix and required approvals. Current decision: **NOT READY FOR PRODUCTION**. Re-evaluate only after the actual acceptance gates pass, then request the owner's final explicit release approval.
+
+Mobile deployment note: a protected project now exists with preview-only variables. Vercel labeled its first staging request as production, so it was canceled before READY. Automatic approval review rejected a retry without an explicit target. Correct preview targeting must be established before another mobile deployment.

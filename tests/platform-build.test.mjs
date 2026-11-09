@@ -10,6 +10,7 @@ for(const app of ['marketplace','mobile','merchant','admin']){
   assert.ok(existsSync(`dist/${app}/index.html`));
   const cfg=JSON.parse(readFileSync(`apps/${app}/vercel.json`));
   assert.equal(cfg.outputDirectory,`dist/${app}`);
+  assert.ok(cfg.rewrites.some(r=>r.source==='/api/:path*'&&r.destination==='/api/router?__route=:path*'),'nested API rewrite missing');
  });
 }
 test('recovered storefront preserves approved styles',()=>{
