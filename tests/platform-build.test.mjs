@@ -19,3 +19,11 @@ test('recovered storefront preserves approved styles',()=>{
  for(const style of styles)assert.ok(built.includes(style),'approved style changed');
  assert.ok(!built.includes('Demo rating'));
 });
+
+test('Git-source previews preserve shared security headers and deep-link rewrites',()=>{
+ const cfg=JSON.parse(readFileSync('vercel.json'));
+ assert.ok(cfg.headers[0].headers.some(h=>h.key==='X-Frame-Options'&&h.value==='DENY'));
+ assert.ok(cfg.rewrites.some(r=>r.source==='/account'&&r.destination==='/index.html'));
+ assert.ok(cfg.rewrites.some(r=>r.source==='/products/:id'));
+ assert.equal(cfg.env,undefined,'application identity must remain isolated per project');
+});
