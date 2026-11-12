@@ -61,3 +61,12 @@ test('customer payment messaging never falsely advertises live bKash or manual c
   assert.match(html,/Bangladesh\/bKash HOLD/);
  }
 });
+
+test('all shipped staging apps explicitly disable live Supabase auth and mutation',()=>{
+ for(const app of ['marketplace','mobile','merchant','admin','owner']){
+  const p=readFileSync(`dist/${app}/config.js`,'utf8');
+  assert.match(p,/"readOnly":true/);
+ }
+ const client=readFileSync('shared/client.mjs','utf8');
+ assert.match(client,/if\(readOnly&&method!=='GET'\)/);
+});
