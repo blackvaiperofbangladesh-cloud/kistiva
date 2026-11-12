@@ -35,6 +35,12 @@ export async function handle(request,env=process.env,transport=fetch){
   const user=await backend('/auth/v1/user');if(!user?.id||user.is_anonymous)throw new Failure(401,'Verified customer sign-in required');
   const account=(await rest('profiles',`id=eq.${encodeURIComponent(user.id)}&select=account_status&limit=1`))?.[0];
   if(account?.account_status!=='active')throw new Failure(403,'Active account required');
+  // STRICT nonproduction isolation: this branch points at the existing live Supabase
+  // project. No staging request may mutate profiles, stock, orders, merchant KYC,
+  // notifications, support or payments. Only tests with an injected mock transport
+  // AND the CI fixture flag may exercise mutation logic. A deployed server uses fetch.
+  if(request.method!=='GET' && !(env.KRISTIVA_TEST_FIXTURE_MODE==='true' && transport!==fetch))
+   throw new Failure(503,'Staging is read-only: isolated database, role/RLS and owner release gates not yet verified');
   let seller=null,isAdmin=false;
   if(route.startsWith('admin/')){isAdmin=await rpc('is_admin');try{authorize('admin',user,null,isAdmin);}catch{throw new Failure(403,'Access denied');}}
   if(route.startsWith('merchant/')){
