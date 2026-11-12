@@ -1,4 +1,4 @@
-import {authorize,normalizeItems,paymentMethod,PROJECT_REF,validateCryptoEvidence} from '../shared/commerce.mjs';
+import {authorize,normalizeItems,paymentMethod,PROJECT_REF} from '../shared/commerce.mjs';
 import {HttpFailure as Failure,readJson} from './request.mjs';
 const requireValue=(value,message)=>{if(!value)throw new Failure(400,message);return value;};
 const uuid=x=>typeof x==='string'&&/^[a-f\d]{8}-[a-f\d]{4}-[a-f\d]{4}-[a-f\d]{4}-[a-f\d]{12}$/i.test(x);
@@ -81,9 +81,11 @@ export async function handle(request,env=process.env,transport=fetch){
    return reply(await rpc('kristiva_checkout',{p_items:items,p_shipping_address:{...Object.fromEntries(['name','email','phone','address'].map(k=>[k,text(body.shipping[k],220)])),country},p_method:method,p_idempotency_key:body.idempotency_key}),201);
   }
   if(route==='admin/payment-review'){
-   requireValue(uuid(body.payment_id),'Invalid payment');requireValue(['approve','reject'].includes(body.decision),'Invalid decision');
-   if(body.decision==='approve')validateCryptoEvidence(body.evidence);
-   return reply(await rpc('kristiva_review_crypto',{p_payment_id:body.payment_id,p_decision:body.decision,p_evidence:body.evidence||{},p_note:text(body.note,1000)}));
+   // Client-supplied booleans and screenshots are NEVER independent blockchain evidence.
+   // An audited verifier must confirm network, recipient, token contract, decimals,
+   // amount, finality and chain+TxHash uniqueness server-side before any Paid event.
+   // Keep this legacy manual review endpoint closed even when older release flags are true.
+   throw new Failure(503,'Payment approval is HOLD until trusted server-side blockchain verification is independently tested');
   }
   throw new Failure(503,'Workflow is not yet verified');
  }catch(e){return reply({error:e instanceof Failure?e.message:e.message==='Access denied'?'Access denied':'Request could not be completed'},e.status||400);}
