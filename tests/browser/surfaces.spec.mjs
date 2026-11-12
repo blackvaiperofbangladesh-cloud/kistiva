@@ -75,7 +75,7 @@ for(const [app,port] of [['merchant',4175],['admin',4176]]){
 
 test('preserved marketing landing has three hero slides and safe international search routing',async({page})=>{
  const errors=[];page.on('pageerror',e=>errors.push(e.message));
- await page.route('https://kristiva-marketplace-preview-a3ql1dbjz.vercel.app/**',route=>route.fulfill({contentType:'text/html',body:'<html><body>Fixture international store</body></html>'}));
+ await page.route('https://kristiva-marketplace-preview-5wx7sj3j8.vercel.app/**',route=>route.fulfill({contentType:'text/html',body:'<html><body>Fixture international store</body></html>'}));
  await page.goto('http://127.0.0.1:4178/');
  await expect(page.locator('#k4-track .k4-slide')).toHaveCount(3);
  await expect(page.locator('#k4-installment-products')).toContainText('Crypto Installment Products');
