@@ -12,9 +12,12 @@ export function normalizeItems(items){
  if([...quantities.values()].reduce((a,b)=>a+b,0)>100)throw new Error('Cart quantity limit exceeded');
  return [...quantities].sort(([a],[b])=>a.localeCompare(b)).map(([product_id,quantity])=>({product_id,quantity}));
 }
-export function paymentMethod(country,{cryptoCountries=[]}={}){
+export function paymentMethod(country,{cryptoCountries=[],bdEnabled=false}={}){
  if(typeof country!=='string'||!(/^[A-Z]{2}$/).test(country))throw new Error('Select a valid country');
- if(country==='BD')return 'bkash';
+ if(country==='BD'){
+  if(bdEnabled!==true)throw new Error('Bangladesh checkout is on HOLD');
+  return 'bkash';
+ }
  if(!cryptoCountries.includes(country))throw new Error('Payment unavailable in this country');
  return 'manual_crypto';
 }

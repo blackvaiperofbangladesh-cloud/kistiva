@@ -1,5 +1,5 @@
 import http from 'node:http';import {readFile} from 'node:fs/promises';import {resolve,extname} from 'node:path';import {handle} from '../server/handler.mjs';
-const app=process.argv[2]||'marketplace';if(!['marketplace','mobile','merchant','admin'].includes(app))throw Error('Unknown app');
+const app=process.argv[2]||'marketplace';if(!['marketplace','mobile','merchant','admin','owner','landing'].includes(app))throw Error('Unknown app');
 process.env.KRISTIVA_APP=app;process.env.SUPABASE_URL||='https://imtlvvninxwvxhzydjqa.supabase.co';process.env.SUPABASE_PUBLISHABLE_KEY||='sb_publishable_TicRFUA3OuQm9YPPxWBQzA_XH9cnVX5';
 const root=resolve('dist',app),port=Number(process.env.PORT||4173);
 http.createServer(async(req,res)=>{try{

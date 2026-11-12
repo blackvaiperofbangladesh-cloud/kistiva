@@ -1,6 +1,6 @@
 import test from 'node:test';import assert from 'node:assert/strict';
 const {handle}=await import('../server/handler.mjs').catch(()=>({}));
-const invoke=async(path,options={},env={},transport=()=>{throw Error('Unexpected network call')})=>{assert.equal(typeof handle,'function','API handler missing');return handle(new Request('https://store.test/api/'+path,options),{KRISTIVA_APP:'marketplace',SUPABASE_URL:'https://imtlvvninxwvxhzydjqa.supabase.co',SUPABASE_PUBLISHABLE_KEY:'sb_publishable_test',...env},transport)};
+const invoke=async(path,options={},env={},transport=()=>{throw Error('Unexpected network call')})=>{assert.equal(typeof handle,'function','API handler missing');return handle(new Request('https://store.test/api/'+path,options),{KRISTIVA_APP:'marketplace',SUPABASE_URL:'https://imtlvvninxwvxhzydjqa.supabase.co',SUPABASE_PUBLISHABLE_KEY:'sb_publishable_test',KRISTIVA_TEST_FIXTURE_MODE:'true',...env},transport)};
 test('health returns no secrets and writes disabled by default',async()=>{const r=await invoke('health');assert.equal(r.status,200);const j=await r.json();assert.equal(j.paymentsEnabled,false);assert.ok(!JSON.stringify(j).includes('sb_publishable_test'))});
 test('mutation requires bearer token',async()=>assert.equal((await invoke('checkout',{method:'POST',body:'{}',headers:{'content-type':'application/json'}})).status,401));
 test('cross-origin mutation rejected before authentication',async()=>assert.equal((await invoke('checkout',{method:'POST',headers:{origin:'https://evil.test'}})).status,403));
@@ -24,3 +24,38 @@ for(const [route,method] of [['profile','DELETE'],['merchant/products','PATCH'],
 const merchantTransport=async url=>{if(url.endsWith('/auth/v1/user'))return Response.json({id:'merchant'});if(url.includes('/profiles?'))return Response.json([{account_status:'active'}]);if(url.includes('/seller_profiles?'))return Response.json([{id:'seller',user_id:'merchant',status:'approved',deposit_status:'verified'}]);throw Error('Invalid input must not reach a mutation');};
 for(const invalid of [{price:0.001},{price:1e100},{stock_quantity:1e20},{category_id:'not-a-uuid'}])test(`merchant product rejects invalid fields ${JSON.stringify(invalid)}`,async()=>{const r=await invoke('merchant/products',{method:'POST',headers:{authorization:'Bearer test'},body:JSON.stringify({name:'Test',price:100,stock_quantity:1,...invalid})},{KRISTIVA_APP:'merchant'},merchantTransport);assert.equal(r.status,400);});
 test('inventory adjustments require a nonempty audit reason',async()=>{const r=await invoke('merchant/inventory',{method:'POST',headers:{authorization:'Bearer test'},body:JSON.stringify({product_id:'11111111-1111-4111-8111-111111111111',delta:1,reason:'  '})},{KRISTIVA_APP:'merchant'},merchantTransport);assert.equal(r.status,400);});
+
+test('no client-supplied crypto flags can mark a payment paid, even with legacy release flags',async()=>{
+ const requests=[];
+ const transport=async (url,options)=>{
+  requests.push(url);
+  if(url.endsWith('/auth/v1/user'))return Response.json({id:'verified-admin',is_anonymous:false});
+  if(url.includes('/profiles?'))return Response.json([{account_status:'active'}]);
+  if(url.endsWith('/rest/v1/rpc/is_admin'))return Response.json(true);
+  throw Error('No trusted verification RPC is available');
+ };
+ const response=await invoke('admin/payment-review',{
+  method:'POST',
+  headers:{authorization:'Bearer fixture-token','content-type':'application/json'},
+  body:JSON.stringify({payment_id:'11111111-1111-4111-8111-111111111111',decision:'approve',
+    evidence:{recipientMatches:true,networkMatches:true,amountMatches:true,unique:true,confirmations:999,requiredConfirmations:1}})
+ },{KRISTIVA_APP:'admin',KRISTIVA_PAYMENTS_ENABLED:'true',KRISTIVA_BACKEND_V2_VERIFIED:'true'},transport);
+ assert.equal(response.status,503);
+ assert.match((await response.json()).error,/trusted server-side blockchain verification/i);
+ assert.ok(!requests.some(url=>url.includes('kristiva_review_crypto')),'forged evidence reached money-changing RPC');
+});
+
+test('deployed-style staging transport cannot mutate live Supabase with fixture flag disabled',async()=>{
+ const seen=[];
+ const transport=async url=>{
+  seen.push(url);
+  if(url.endsWith('/auth/v1/user'))return Response.json({id:'customer',is_anonymous:false});
+  if(url.includes('/profiles?'))return Response.json([{account_status:'active'}]);
+  throw Error('No staging database write is allowed');
+ };
+ const r=await invoke('profile',{method:'PATCH',headers:{authorization:'Bearer test','content-type':'application/json'},body:JSON.stringify({full_name:'Mismatched write'})},
+   {KRISTIVA_TEST_FIXTURE_MODE:'false'},transport);
+ assert.equal(r.status,503);
+ assert.match((await r.json()).error,/Staging is read-only/);
+ assert.equal(seen.length,2);
+});

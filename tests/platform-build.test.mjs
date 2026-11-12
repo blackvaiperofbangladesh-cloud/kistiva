@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {existsSync,readFileSync} from 'node:fs';
 import {spawnSync} from 'node:child_process';
-for(const app of ['marketplace','mobile','merchant','admin']){
+for(const app of ['marketplace','mobile','merchant','admin','owner','landing']){
  test(`${app} builds independently with isolated config`,()=>{
   assert.ok(existsSync(`apps/${app}/vercel.json`),'independent deployment configuration missing');
   const r=spawnSync(process.execPath,['scripts/build.mjs',app],{encoding:'utf8'});
@@ -27,4 +27,78 @@ test('Git-source previews preserve shared security headers and deep-link rewrite
  assert.ok(cfg.rewrites.some(r=>r.source==='/account'&&r.destination==='/index.html'));
  assert.ok(cfg.rewrites.some(r=>r.source==='/products/:id'));
  assert.equal(cfg.env,undefined,'application identity must remain isolated per project');
+});
+
+test('customer store and mobile list published products without falsely calling them featured',()=>{
+ for(const app of ['marketplace','mobile']){
+  const html=readFileSync(`apps/${app}/index.html`,'utf8');
+  assert.match(html,/<h2>All available products<\/h2>/);
+  assert.doesNotMatch(html,/<h2>Featured collection<\/h2>/);
+  assert.match(html,/id="products"/);
+ }
+});
+
+test('admin login is not mislabeled Owner, and financing panels remain HOLD',()=>{
+ const html=readFileSync('apps/admin/index.html','utf8');
+ assert.match(html,/<h2>Admin sign in<\/h2>/);
+ assert.doesNotMatch(html,/<h2>Owner sign in<\/h2>/);
+ assert.match(html,/Crypto Installment Applications — HOLD/);
+ assert.match(html,/merchant approval fee collection are OFF\/HOLD/);
+});
+test('owner blueprint has no active payment or privileged submission form',()=>{
+ const html=readFileSync('apps/owner/index.html','utf8');
+ assert.match(html,/Owner Governance — Staging Blueprint/);
+ assert.match(html,/NO PRIVILEGED ACCESS/);
+ assert.doesNotMatch(html,/type="submit"/);
+});
+
+test('customer payment messaging never falsely advertises live bKash or manual crypto',()=>{
+ for(const app of ['marketplace','mobile']){
+  const html=readFileSync(`apps/${app}/index.html`,'utf8');
+  assert.doesNotMatch(html,/Bangladesh: bKash Merchant Gateway/);
+  assert.doesNotMatch(html,/Other supported countries: manually verified crypto payments/);
+  assert.match(html,/Do not transfer funds/);
+  assert.match(html,/Bangladesh\/bKash HOLD/);
+ }
+});
+
+test('all shipped staging apps explicitly disable live Supabase auth and mutation',()=>{
+ for(const app of ['marketplace','mobile','merchant','admin','owner','landing']){
+  const p=readFileSync(`dist/${app}/config.js`,'utf8');
+  assert.match(p,/"readOnly":true/);
+ }
+ const client=readFileSync('shared/client.mjs','utf8');
+ assert.match(client,/if\(readOnly&&method!=='GET'\)/);
+});
+
+test('marketing landing retains approved source, exactly three hero slides and HOLD section',()=>{
+ const html=readFileSync('apps/landing/index.html','utf8');
+ assert.equal((html.match(/<article class="k4-slide /g)||[]).length,3);
+ assert.match(html,/Crypto Installment Products/);
+ assert.match(html,/PROTECTED STAGING PREVIEW/);
+ assert.match(html,/Bangladesh Store — HOLD/);
+ assert.match(html,/kristiva-marketplace-preview-/);
+ assert.doesNotMatch(html,/href="create-account\//);
+ assert.doesNotMatch(html,/sb_secret_|service_role|sk-emergent/);
+});
+
+test('landing never claims live search or active signup',()=>{
+ const html=readFileSync('apps/landing/index.html','utf8');
+ assert.doesNotMatch(html,/Preview shows categories\. Product search is not live\./);
+ assert.doesNotMatch(html,/Shop Now · Create Account/);
+ assert.match(html,/Search opens the protected International Store Preview/);
+ assert.match(html,/Account Preview — Login HOLD/);
+});
+
+test('merchant onboarding preview explains the real eight-step gates without collecting KYC',()=>{
+ const login=readFileSync('apps/merchant/index.html','utf8');
+ const page=readFileSync('apps/merchant/onboarding.html','utf8');
+ assert.match(login,/href="\/onboarding\.html"/);
+ assert.match(page,/Owner Final Approval \(MFA\)/);
+ assert.match(page,/Separate Owner Activation \(MFA\)/);
+ assert.match(page,/Homepage Product Review — Owner Only/);
+ assert.match(page,/NOT AN APPLICATION FORM/);
+ assert.match(page,/Merchant 500 USDT onboarding fee is HOLD/);
+ assert.doesNotMatch(page,/<input\b/i);
+ assert.doesNotMatch(page,/<form\b/i);
 });

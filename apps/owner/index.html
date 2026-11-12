@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>KRISTIVA | Owner Governance — Staging Blueprint</title>
+<style>
+:root{--bg:#080c16;--panel:#101a2c;--line:#293953;--ink:#eef6ff;--muted:#a6b7ce;--cyan:#25cee5;--blue:#497ff8;--purple:#9163ee}
+*{box-sizing:border-box}body{margin:0;background:radial-gradient(circle at 80% 0,#162c54,var(--bg) 44%);font:14px/1.5 Inter,system-ui,Arial;color:var(--ink)}button{font:inherit}a{color:#89c4ff}
+.banner{background:#422b18;color:#ffddb1;padding:10px 19px;text-align:center;font-size:12px;font-weight:700;letter-spacing:.03em}
+header{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:center;gap:12px;max-width:1500px;margin:auto;padding:19px 20px;border-bottom:1px solid var(--line)}.brand{font-weight:900;font-size:24px;letter-spacing:1px;background:linear-gradient(110deg,var(--cyan),var(--blue),var(--purple));background-clip:text;color:transparent}.sub{color:var(--muted);font-size:12px}.shell{max-width:1500px;margin:auto;padding:20px;display:grid;grid-template-columns:278px minmax(0,1fr);gap:22px}.sidebar,.panel,.card{background:linear-gradient(130deg,#121f32,#0e1625);border:1px solid var(--line);border-radius:16px}.sidebar{padding:12px;align-self:start;max-height:76vh;overflow:auto;position:sticky;top:16px}.nav{width:100%;border:0;background:transparent;color:#c2d0e6;border-radius:9px;padding:11px;text-align:left;margin:2px 0;cursor:pointer}.nav:focus-visible,.nav.active{outline:2px solid var(--cyan);background:#213550;color:#fff}.panel{padding:23px;margin-bottom:15px}.muted{color:var(--muted)}h1{font-size:clamp(26px,3vw,37px);letter-spacing:-.03em;margin:5px 0}h2{font-size:18px}.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin:19px 0}.card{padding:17px}.status{display:inline-block;border:1px solid #74542a;background:#372a1c;border-radius:99px;color:#ffd39b;padding:5px 10px;font-size:11px;font-weight:700}.hold{color:#f7c393}.number{color:#79b4f8;font-weight:800}.step{display:flex;gap:10px;align-items:center;margin:11px 0;padding:12px;background:#15243a;border-radius:10px}.step strong{color:#dcefff}.inactive{opacity:.8;border:1px solid var(--line);border-radius:12px;padding:12px;color:#ccd6e8;background:#172136}.footer{font-size:12px;color:var(--muted);padding:16px 0}.sr{position:absolute;left:-9999px}
+@media(max-width:800px){.shell{grid-template-columns:1fr}.sidebar{position:static;max-height:none;display:flex;overflow:auto;gap:5px}.nav{white-space:nowrap;width:auto;flex:none}.grid{grid-template-columns:1fr}}
+</style></head>
+<body><div class="banner">STAGING DESIGN BLUEPRINT ONLY — NO PRIVILEGED ACCESS, PAYMENTS, KYC SUBMISSION OR PRODUCTION ACTIONS</div>
+<header><div><div class="brand">KRISTIVA</div><div class="sub">Owner Governance | Source-backed workflow specification</div></div><span class="status">Owner Release: LOCKED</span></header>
+<div class="shell"><nav class="sidebar" aria-label="Owner module navigation" id="nav"></nav>
+<main aria-live="polite"><section class="panel"><div class="number">16 approved governance modules · Source: KRISTIVA Master Architecture</div><h1 id="title">Executive Overview</h1><p id="description" class="muted"></p><div class="grid"><div class="card"><div class="muted">Backend authorization</div><h2>BLOCKED</h2><p>Owner-specific MFA and trusted role policy require independent review.</p></div><div class="card"><div class="muted">Financial operations</div><h2 class="hold">HOLD</h2><p>No manual Paid, installment collection, merchant fee or payout.</p></div><div class="card"><div class="muted">Release approval</div><h2>LOCKED</h2><p>Staging only; owner must separately approve production.</p></div></div><div class="inactive" id="detail"></div></section>
+<section class="panel"><h2>Approval sequence — documented, not yet connected to Supabase writes</h2><div id="flow"></div></section>
+<section class="panel"><h2>Integration readiness</h2><div id="gates"></div></section><div class="footer">No sample private accounts, fake revenue, editable wallet, TxHash approval controls or live payment elements are present. This design does not establish an authenticated Owner session.</div></main></div>
+<script type="module">
+import {OWNER_MENU,readiness,WORKFLOW_VERSION} from '/shared/workflow-policy.mjs';
+const details=[
+ 'Verified server-side counts only; never invent metrics.',
+ 'Customers, merchants and delegated users; access bounded by RLS.',
+ 'Terms, email, KYC correction, Admin recommendation and separate Owner MFA activation; 500 USDT fee HOLD.',
+ 'Merchant product submission, Admin correction and Owner decision, with audit log.',
+ 'Only published + separately owner-selected eligible products; financing information only.',
+ 'Catalog, stock, prices, seller attribution and moderation state.',
+ 'Account, cart, checkout, order, shipping, return and review paths.',
+ 'Applications, loans and collections are completely HOLD.',
+ 'Merchant fee HOLD; Customer normal TxHash verification requires independent chain proof.',
+ 'Verified seller-ledger delivery, disputes, reconciliation and payout reviews.',
+ 'Owner-owned sales separate from merchant settlements.',
+ 'Versioned coin/network/address with reason, MFA, append-only history; no silent changes.',
+ 'Seven official business mailboxes and idempotent outbox; no real sends.',
+ 'Roles, MFA, risk flags, checkout emergency pause, RLS contract.',
+ 'GitHub SHA, Vercel preview, DNS/mail, SSL, backup, rollback and signed release.',
+ 'Actor, time, decision, evidence, revision chain and exports.'
+];
+const list=document.getElementById('nav'),title=document.getElementById('title'),desc=document.getElementById('description'),detail=document.getElementById('detail');
+OWNER_MENU.forEach((label,i)=>{const b=document.createElement('button');b.type='button';b.className='nav';b.textContent=String(i+1).padStart(2,'0')+'. '+label;b.onclick=()=>{list.querySelectorAll('.nav').forEach(x=>x.classList.toggle('active',x===b));title.textContent=label;desc.textContent=details[i];detail.textContent='STATUS: DESIGN PRESENT / SERVER-AUTHORITATIVE IMPLEMENTATION UNVERIFIED — No mutation is available in this blueprint.';};list.append(b)});
+list.firstElementChild.click();
+const steps=['Merchant registration + Terms','Email + KYC / Admin correction','Owner final Merchant approval + separate activation','Merchant product submission','Admin Product Review + correction','Owner Product Approval','Published in normal Store/Category','Independent Homepage Product Review [HOLD financing]'];
+const flow=document.getElementById('flow');steps.forEach((s,i)=>{const d=document.createElement('div');d.className='step';const a=document.createElement('span');a.className='number';a.textContent=String(i+1).padStart(2,'0');const p=document.createElement('strong');p.textContent=s;d.append(a,p);flow.append(d)});
+const gates=document.getElementById('gates');const data=readiness();Object.entries(data).forEach(([key,val])=>{const d=document.createElement('div');d.className='step';const k=document.createElement('strong');k.textContent=key;const v=document.createElement('span');v.textContent=String(val);d.append(k,v);gates.append(d)});
+</script></body></html>

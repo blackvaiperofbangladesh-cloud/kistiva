@@ -1,4 +1,4 @@
-import {authorize,normalizeItems,paymentMethod,PROJECT_REF,validateCryptoEvidence} from '../shared/commerce.mjs';
+import {authorize,normalizeItems,paymentMethod,PROJECT_REF} from '../shared/commerce.mjs';
 import {HttpFailure as Failure,readJson} from './request.mjs';
 const requireValue=(value,message)=>{if(!value)throw new Failure(400,message);return value;};
 const uuid=x=>typeof x==='string'&&/^[a-f\d]{8}-[a-f\d]{4}-[a-f\d]{4}-[a-f\d]{4}-[a-f\d]{12}$/i.test(x);
@@ -35,6 +35,12 @@ export async function handle(request,env=process.env,transport=fetch){
   const user=await backend('/auth/v1/user');if(!user?.id||user.is_anonymous)throw new Failure(401,'Verified customer sign-in required');
   const account=(await rest('profiles',`id=eq.${encodeURIComponent(user.id)}&select=account_status&limit=1`))?.[0];
   if(account?.account_status!=='active')throw new Failure(403,'Active account required');
+  // STRICT nonproduction isolation: this branch points at the existing live Supabase
+  // project. No staging request may mutate profiles, stock, orders, merchant KYC,
+  // notifications, support or payments. Only tests with an injected mock transport
+  // AND the CI fixture flag may exercise mutation logic. A deployed server uses fetch.
+  if(request.method!=='GET' && !(env.KRISTIVA_TEST_FIXTURE_MODE==='true' && transport!==fetch))
+   throw new Failure(503,'Staging is read-only: isolated database, role/RLS and owner release gates not yet verified');
   let seller=null,isAdmin=false;
   if(route.startsWith('admin/')){isAdmin=await rpc('is_admin');try{authorize('admin',user,null,isAdmin);}catch{throw new Failure(403,'Access denied');}}
   if(route.startsWith('merchant/')){
@@ -75,15 +81,17 @@ export async function handle(request,env=process.env,transport=fetch){
   // These routes stay closed until the staging database contract has passed its release gate.
   if(env.KRISTIVA_BACKEND_V2_VERIFIED!=='true')throw new Failure(503,'This operation requires verified backend migration');
   if(route==='checkout'){
-   const items=normalizeItems(body.items),country=text(body.shipping?.country,2),method=paymentMethod(country,{cryptoCountries:(env.KRISTIVA_CRYPTO_COUNTRIES||'').split(',')});
+   const items=normalizeItems(body.items),country=text(body.shipping?.country,2),method=paymentMethod(country,{cryptoCountries:(env.KRISTIVA_CRYPTO_COUNTRIES||'').split(','),bdEnabled:env.KRISTIVA_BD_CHECKOUT_ENABLED==='true'});
    for(const field of ['name','email','phone','address'])requireValue(text(body.shipping?.[field],220),`Shipping ${field} required`);
    requireValue(uuid(body.idempotency_key),'Valid checkout key required');
    return reply(await rpc('kristiva_checkout',{p_items:items,p_shipping_address:{...Object.fromEntries(['name','email','phone','address'].map(k=>[k,text(body.shipping[k],220)])),country},p_method:method,p_idempotency_key:body.idempotency_key}),201);
   }
   if(route==='admin/payment-review'){
-   requireValue(uuid(body.payment_id),'Invalid payment');requireValue(['approve','reject'].includes(body.decision),'Invalid decision');
-   if(body.decision==='approve')validateCryptoEvidence(body.evidence);
-   return reply(await rpc('kristiva_review_crypto',{p_payment_id:body.payment_id,p_decision:body.decision,p_evidence:body.evidence||{},p_note:text(body.note,1000)}));
+   // Client-supplied booleans and screenshots are NEVER independent blockchain evidence.
+   // An audited verifier must confirm network, recipient, token contract, decimals,
+   // amount, finality and chain+TxHash uniqueness server-side before any Paid event.
+   // Keep this legacy manual review endpoint closed even when older release flags are true.
+   throw new Failure(503,'Payment approval is HOLD until trusted server-side blockchain verification is independently tested');
   }
   throw new Failure(503,'Workflow is not yet verified');
  }catch(e){return reply({error:e instanceof Failure?e.message:e.message==='Access denied'?'Access denied':'Request could not be completed'},e.status||400);}
