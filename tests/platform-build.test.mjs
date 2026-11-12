@@ -28,3 +28,12 @@ test('Git-source previews preserve shared security headers and deep-link rewrite
  assert.ok(cfg.rewrites.some(r=>r.source==='/products/:id'));
  assert.equal(cfg.env,undefined,'application identity must remain isolated per project');
 });
+
+test('customer store and mobile list published products without falsely calling them featured',()=>{
+ for(const app of ['marketplace','mobile']){
+  const html=readFileSync(`apps/${app}/index.html`,'utf8');
+  assert.match(html,/<h2>All available products<\/h2>/);
+  assert.doesNotMatch(html,/<h2>Featured collection<\/h2>/);
+  assert.match(html,/id="products"/);
+ }
+});
