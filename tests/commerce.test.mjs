@@ -11,7 +11,13 @@ test('mixed-case duplicate UUIDs cannot bypass aggregate quantity limit',()=>{
 });
 test('duplicate cart lines aggregate before inventory validation',()=>{assert.deepEqual(must('normalizeItems',[{product_id:'5e9efd64-3d01-41dd-bf9c-3cba6abfed5e',quantity:2},{product_id:'5e9efd64-3d01-41dd-bf9c-3cba6abfed5e',quantity:3}]),[{product_id:'5e9efd64-3d01-41dd-bf9c-3cba6abfed5e',quantity:5}])});
 for(const q of [0,-1,1.1,NaN,26,'1'])test(`reject invalid quantity ${q}`,()=>assert.throws(()=>must('normalizeItems',[{product_id:'5e9efd64-3d01-41dd-bf9c-3cba6abfed5e',quantity:q}]),/quantity/));
-test('Bangladesh permits bKash only',()=>{assert.equal(must('paymentMethod','BD',{cryptoCountries:['BD','US']}),'bkash')});
+test('Bangladesh checkout remains HOLD by default, even on crypto allowlist',()=>{
+ assert.throws(()=>must('paymentMethod','BD',{cryptoCountries:['BD','US']}),/HOLD/);
+ assert.throws(()=>must('paymentMethod','BD',{bdEnabled:'true'}),/HOLD/);
+});
+test('Bangladesh payment method requires separate boolean activation gate',()=>{
+ assert.equal(must('paymentMethod','BD',{bdEnabled:true}),'bkash');
+});
 test('foreign crypto requires explicit approved country',()=>{assert.equal(must('paymentMethod','US',{cryptoCountries:['US']}),'manual_crypto');assert.throws(()=>must('paymentMethod','GB',{cryptoCountries:['US']}),/unavailable/)});
 test('free text country cannot bypass jurisdiction gate',()=>assert.throws(()=>must('paymentMethod','Bangladesh',{cryptoCountries:['US']}),/country/));
 test('client metadata cannot confer admin role',()=>{assert.throws(()=>must('authorize','admin',{id:'u',user_metadata:{role:'admin'},app_metadata:{}},null,false),/denied/)});
