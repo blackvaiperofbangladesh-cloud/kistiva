@@ -72,3 +72,28 @@ for(const [app,port] of [['merchant',4175],['admin',4176]]){
   await expect(page.locator('#authmsg')).toContainText('production account sign-in is disabled');
  });
 }
+
+test('preserved marketing landing has three hero slides and safe international search routing',async({page})=>{
+ const errors=[];page.on('pageerror',e=>errors.push(e.message));
+ await page.route('https://kristiva-marketplace-preview-a3ql1dbjz.vercel.app/**',route=>route.fulfill({contentType:'text/html',body:'<html><body>Fixture international store</body></html>'}));
+ await page.goto('http://127.0.0.1:4178/');
+ await expect(page.locator('#k4-track .k4-slide')).toHaveCount(3);
+ await expect(page.locator('#k4-installment-products')).toContainText('Crypto Installment Products');
+ await expect(page.locator('#k4-installment-products')).toContainText('HOLD');
+ await page.locator('#k6-search').fill('Electronics');
+ await page.locator('#k6-search-form').evaluate(form=>form.dispatchEvent(new Event('submit',{cancelable:true,bubbles:true})));
+ await expect(page).toHaveURL(/kristiva-marketplace-preview-a3ql1dbjz\.vercel\.app.*\?q=Electronics/);
+ expect(errors).toEqual([]);
+});
+test('international customer catalog honors marketing search parameter',async({page})=>{
+ await fixtures(page);
+ await page.goto('http://127.0.0.1:4173/?q=Fixture');
+ await expect(page.locator('#search')).toHaveValue('Fixture');
+ await expect(page.locator('.product')).toHaveCount(1);
+});
+test('landing mobile layout has no page-level overflow at 390px',async({page})=>{
+ await page.setViewportSize({width:390,height:844});
+ await page.goto('http://127.0.0.1:4178/');
+ await expect(page.locator('#k4-track .k4-slide')).toHaveCount(3);
+ expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
+});
