@@ -1,5 +1,5 @@
 import {cp,mkdir,readFile,writeFile,rm} from 'node:fs/promises';
-const all=['marketplace','mobile','merchant','admin'];const app=process.argv[2];
+const all=['marketplace','mobile','merchant','admin','owner'];const app=process.argv[2];
 if(app&&!all.includes(app))throw new Error('Unknown application');
 for(const name of app?[app]:all){
  const out=`dist/${name}`;await rm(out,{recursive:true,force:true});await mkdir(out,{recursive:true});
