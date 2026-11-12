@@ -25,7 +25,7 @@ jobs:
     needs: verify
     strategy:
       matrix:
-        app: [marketplace, mobile, merchant, admin]
+        app: [marketplace, mobile, merchant, admin, owner]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
