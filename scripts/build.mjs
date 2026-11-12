@@ -6,7 +6,7 @@ for(const name of app?[app]:all){
  await cp(`apps/${name}`,out,{recursive:true});await cp('shared',`${out}/shared`,{recursive:true});
  await mkdir(`${out}/shared/vendor`,{recursive:true});
  await cp('node_modules/@supabase/supabase-js/dist/umd/supabase.js',`${out}/shared/vendor/supabase.js`);
- const config={supabaseUrl:process.env.PUBLIC_SUPABASE_URL||'https://imtlvvninxwvxhzydjqa.supabase.co',supabaseKey:process.env.PUBLIC_SUPABASE_PUBLISHABLE_KEY||'sb_publishable_TicRFUA3OuQm9YPPxWBQzA_XH9cnVX5',app:name};
+ const config={supabaseUrl:process.env.PUBLIC_SUPABASE_URL||'https://imtlvvninxwvxhzydjqa.supabase.co',supabaseKey:process.env.PUBLIC_SUPABASE_PUBLISHABLE_KEY||'sb_publishable_TicRFUA3OuQm9YPPxWBQzA_XH9cnVX5',app:name,readOnly:true};
  if(config.supabaseUrl!=='https://imtlvvninxwvxhzydjqa.supabase.co')throw new Error('Unexpected Supabase project');
  if(!config.supabaseKey.startsWith('sb_publishable_'))throw new Error('Only a publishable key may enter the browser');
  await writeFile(`${out}/config.js`,`window.KRISTIVA_CONFIG=${JSON.stringify(config)};\n`);
