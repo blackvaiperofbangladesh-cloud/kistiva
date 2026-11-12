@@ -21,7 +21,8 @@
     "build:mobile": "node scripts/build.mjs mobile",
     "build:merchant": "node scripts/build.mjs merchant",
     "build:admin": "node scripts/build.mjs admin",
-    "test:browser": "node scripts/build.mjs && playwright test"
+    "test:browser": "node scripts/build.mjs && playwright test",
+    "build:owner": "node scripts/build.mjs owner"
   },
   "dependencies": {
     "@astrojs/cloudflare": "^14.1.0",
