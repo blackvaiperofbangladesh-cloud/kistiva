@@ -51,3 +51,13 @@ test('owner blueprint has no active payment or privileged submission form',()=>{
  assert.match(html,/NO PRIVILEGED ACCESS/);
  assert.doesNotMatch(html,/type="submit"/);
 });
+
+test('customer payment messaging never falsely advertises live bKash or manual crypto',()=>{
+ for(const app of ['marketplace','mobile']){
+  const html=readFileSync(`apps/${app}/index.html`,'utf8');
+  assert.doesNotMatch(html,/Bangladesh: bKash Merchant Gateway/);
+  assert.doesNotMatch(html,/Other supported countries: manually verified crypto payments/);
+  assert.match(html,/Do not transfer funds/);
+  assert.match(html,/Bangladesh\/bKash HOLD/);
+ }
+});
