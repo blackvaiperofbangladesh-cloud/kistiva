@@ -2,6 +2,8 @@ import {openDialog,closeDialog} from './dialog.mjs';
 import {api,db,$,esc,money,config,readOnly} from './client.mjs';
 import {normalizeItems} from './commerce.mjs';
 let products=[],active='All',mode='login',user=null,currentOrder=null;
+const initialSearch=new URL(location.href).searchParams.get('q')?.trim().slice(0,80);
+if(initialSearch&&$('search'))$('search').value=initialSearch;
 const cartKey=`kristiva-${config.app}-cart-v2`;
 let cart={};try{const c=JSON.parse(localStorage.getItem(cartKey)||'{}');if(c&&typeof c==='object'&&!Array.isArray(c))cart=c;}catch{}
 function status(id,message){if($(id))$(id).textContent=message;}
