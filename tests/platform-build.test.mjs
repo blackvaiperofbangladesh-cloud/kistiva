@@ -37,3 +37,17 @@ test('customer store and mobile list published products without falsely calling 
   assert.match(html,/id="products"/);
  }
 });
+
+test('admin login is not mislabeled Owner, and financing panels remain HOLD',()=>{
+ const html=readFileSync('apps/admin/index.html','utf8');
+ assert.match(html,/<h2>Admin sign in<\/h2>/);
+ assert.doesNotMatch(html,/<h2>Owner sign in<\/h2>/);
+ assert.match(html,/Crypto Installment Applications — HOLD/);
+ assert.match(html,/merchant approval fee collection are OFF\/HOLD/);
+});
+test('owner blueprint has no active payment or privileged submission form',()=>{
+ const html=readFileSync('apps/owner/index.html','utf8');
+ assert.match(html,/Owner Governance — Staging Blueprint/);
+ assert.match(html,/NO PRIVILEGED ACCESS/);
+ assert.doesNotMatch(html,/type="submit"/);
+});
