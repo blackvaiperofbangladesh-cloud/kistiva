@@ -75,7 +75,7 @@ export async function handle(request,env=process.env,transport=fetch){
   // These routes stay closed until the staging database contract has passed its release gate.
   if(env.KRISTIVA_BACKEND_V2_VERIFIED!=='true')throw new Failure(503,'This operation requires verified backend migration');
   if(route==='checkout'){
-   const items=normalizeItems(body.items),country=text(body.shipping?.country,2),method=paymentMethod(country,{cryptoCountries:(env.KRISTIVA_CRYPTO_COUNTRIES||'').split(',')});
+   const items=normalizeItems(body.items),country=text(body.shipping?.country,2),method=paymentMethod(country,{cryptoCountries:(env.KRISTIVA_CRYPTO_COUNTRIES||'').split(','),bdEnabled:env.KRISTIVA_BD_CHECKOUT_ENABLED==='true'});
    for(const field of ['name','email','phone','address'])requireValue(text(body.shipping?.[field],220),`Shipping ${field} required`);
    requireValue(uuid(body.idempotency_key),'Valid checkout key required');
    return reply(await rpc('kristiva_checkout',{p_items:items,p_shipping_address:{...Object.fromEntries(['name','email','phone','address'].map(k=>[k,text(body.shipping[k],220)])),country},p_method:method,p_idempotency_key:body.idempotency_key}),201);
