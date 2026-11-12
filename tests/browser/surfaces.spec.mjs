@@ -82,7 +82,7 @@ test('preserved marketing landing has three hero slides and safe international s
  await expect(page.locator('#k4-installment-products')).toContainText('HOLD');
  await page.locator('#k6-search').fill('Electronics');
  await page.locator('#k6-search-form').evaluate(form=>form.dispatchEvent(new Event('submit',{cancelable:true,bubbles:true})));
- await expect(page).toHaveURL(/kristiva-marketplace-preview-a3ql1dbjz\.vercel\.app.*\?q=Electronics/);
+ await expect(page).toHaveURL(/kristiva-marketplace-preview-5wx7sj3j8\.vercel\.app.*\?q=Electronics/);
  expect(errors).toEqual([]);
 });
 test('international customer catalog honors marketing search parameter',async({page})=>{
