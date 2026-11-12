@@ -24,3 +24,23 @@ for(const [route,method] of [['profile','DELETE'],['merchant/products','PATCH'],
 const merchantTransport=async url=>{if(url.endsWith('/auth/v1/user'))return Response.json({id:'merchant'});if(url.includes('/profiles?'))return Response.json([{account_status:'active'}]);if(url.includes('/seller_profiles?'))return Response.json([{id:'seller',user_id:'merchant',status:'approved',deposit_status:'verified'}]);throw Error('Invalid input must not reach a mutation');};
 for(const invalid of [{price:0.001},{price:1e100},{stock_quantity:1e20},{category_id:'not-a-uuid'}])test(`merchant product rejects invalid fields ${JSON.stringify(invalid)}`,async()=>{const r=await invoke('merchant/products',{method:'POST',headers:{authorization:'Bearer test'},body:JSON.stringify({name:'Test',price:100,stock_quantity:1,...invalid})},{KRISTIVA_APP:'merchant'},merchantTransport);assert.equal(r.status,400);});
 test('inventory adjustments require a nonempty audit reason',async()=>{const r=await invoke('merchant/inventory',{method:'POST',headers:{authorization:'Bearer test'},body:JSON.stringify({product_id:'11111111-1111-4111-8111-111111111111',delta:1,reason:'  '})},{KRISTIVA_APP:'merchant'},merchantTransport);assert.equal(r.status,400);});
+
+test('no client-supplied crypto flags can mark a payment paid, even with legacy release flags',async()=>{
+ const requests=[];
+ const transport=async (url,options)=>{
+  requests.push(url);
+  if(url.endsWith('/auth/v1/user'))return Response.json({id:'verified-admin',is_anonymous:false});
+  if(url.includes('/profiles?'))return Response.json([{account_status:'active'}]);
+  if(url.endsWith('/rest/v1/rpc/is_admin'))return Response.json(true);
+  throw Error('No trusted verification RPC is available');
+ };
+ const response=await invoke('admin/payment-review',{
+  method:'POST',
+  headers:{authorization:'Bearer fixture-token','content-type':'application/json'},
+  body:JSON.stringify({payment_id:'11111111-1111-4111-8111-111111111111',decision:'approve',
+    evidence:{recipientMatches:true,networkMatches:true,amountMatches:true,unique:true,confirmations:999,requiredConfirmations:1}})
+ },{KRISTIVA_APP:'admin',KRISTIVA_PAYMENTS_ENABLED:'true',KRISTIVA_BACKEND_V2_VERIFIED:'true'},transport);
+ assert.equal(response.status,503);
+ assert.match((await response.json()).error,/trusted server-side blockchain verification/i);
+ assert.ok(!requests.some(url=>url.includes('kristiva_review_crypto')),'forged evidence reached money-changing RPC');
+});
