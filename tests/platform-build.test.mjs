@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {existsSync,readFileSync} from 'node:fs';
 import {spawnSync} from 'node:child_process';
-for(const app of ['marketplace','mobile','merchant','admin','owner']){
+for(const app of ['marketplace','mobile','merchant','admin','owner','landing']){
  test(`${app} builds independently with isolated config`,()=>{
   assert.ok(existsSync(`apps/${app}/vercel.json`),'independent deployment configuration missing');
   const r=spawnSync(process.execPath,['scripts/build.mjs',app],{encoding:'utf8'});
@@ -63,10 +63,21 @@ test('customer payment messaging never falsely advertises live bKash or manual c
 });
 
 test('all shipped staging apps explicitly disable live Supabase auth and mutation',()=>{
- for(const app of ['marketplace','mobile','merchant','admin','owner']){
+ for(const app of ['marketplace','mobile','merchant','admin','owner','landing']){
   const p=readFileSync(`dist/${app}/config.js`,'utf8');
   assert.match(p,/"readOnly":true/);
  }
  const client=readFileSync('shared/client.mjs','utf8');
  assert.match(client,/if\(readOnly&&method!=='GET'\)/);
+});
+
+test('marketing landing retains approved source, exactly three hero slides and HOLD section',()=>{
+ const html=readFileSync('apps/landing/index.html','utf8');
+ assert.equal((html.match(/<article class="k4-slide /g)||[]).length,3);
+ assert.match(html,/Crypto Installment Products/);
+ assert.match(html,/PROTECTED STAGING PREVIEW/);
+ assert.match(html,/Bangladesh Store — HOLD/);
+ assert.match(html,/kristiva-marketplace-preview-/);
+ assert.doesNotMatch(html,/href="create-account\//);
+ assert.doesNotMatch(html,/sb_secret_|service_role|sk-emergent/);
 });
