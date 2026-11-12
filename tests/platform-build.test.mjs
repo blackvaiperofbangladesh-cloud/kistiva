@@ -89,3 +89,16 @@ test('landing never claims live search or active signup',()=>{
  assert.match(html,/Search opens the protected International Store Preview/);
  assert.match(html,/Account Preview — Login HOLD/);
 });
+
+test('merchant onboarding preview explains the real eight-step gates without collecting KYC',()=>{
+ const login=readFileSync('apps/merchant/index.html','utf8');
+ const page=readFileSync('apps/merchant/onboarding.html','utf8');
+ assert.match(login,/href="\/onboarding\.html"/);
+ assert.match(page,/Owner Final Approval \(MFA\)/);
+ assert.match(page,/Separate Owner Activation \(MFA\)/);
+ assert.match(page,/Homepage Product Review — Owner Only/);
+ assert.match(page,/NOT AN APPLICATION FORM/);
+ assert.match(page,/Merchant 500 USDT onboarding fee is HOLD/);
+ assert.doesNotMatch(page,/<input\b/i);
+ assert.doesNotMatch(page,/<form\b/i);
+});
