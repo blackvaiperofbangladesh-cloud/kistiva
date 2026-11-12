@@ -33,3 +33,16 @@ test('admin: fixture reports render once and records remain escaped',async({page
  const errors=[];page.on('pageerror',e=>errors.push(e.message));await fixtures(page,{'admin/users':[{full_name:'<img onerror=alert(1)>',created_at:'2026-01-01'}],'admin/reports':{commissions:[],payouts:[]}},true);
  await page.goto('http://127.0.0.1:4176');await expect(page.locator('[data-live-report]')).toHaveCount(4);await page.getByRole('button',{name:'Customers',exact:true}).click();await expect(page.locator('#customerRows')).toContainText('<img onerror=alert(1)>');await expect(page.locator('#customerRows img')).toHaveCount(0);expect(errors).toEqual([]);
 });
+
+test('owner staging blueprint has 16 approved menus and never offers live financial actions',async({page})=>{
+ const errors=[];page.on('pageerror',e=>errors.push(e.message));
+ await page.goto('http://127.0.0.1:4177');
+ await expect(page.locator('#nav button')).toHaveCount(16);
+ await expect(page.locator('#nav button').nth(3)).toContainText('Product Review');
+ await expect(page.locator('#nav button').nth(4)).toContainText('Homepage Product Review');
+ await page.locator('#nav button').nth(4).click();
+ await expect(page.locator('#title')).toHaveText('Homepage Product Review');
+ await expect(page.getByText('NO PRIVILEGED ACCESS',{exact:false})).toBeVisible();
+ await expect(page.locator('button').filter({hasText:/approve|mark paid|transfer/i})).toHaveCount(0);
+ expect(errors).toEqual([]);
+});
