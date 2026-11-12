@@ -1,4 +1,4 @@
-import {api,db,$,esc,money,config} from './client.mjs';
+import {api,db,$,esc,money,config,readOnly} from './client.mjs';
 const admin=config.app==='admin';let seller=null,products=[];
 function show(id){document.querySelectorAll('#app main > section, #app .content > section').forEach(x=>x.classList.toggle('hidden',x.id!==id));for(const section of document.querySelectorAll('#app section[id]'))section.classList.toggle('hidden',section.id!==id);document.querySelectorAll('.nav').forEach(b=>b.classList.toggle('active',b.dataset.view===id));}
 function message(m){let box=$('portalStatus');if(!box){box=document.createElement('p');box.id='portalStatus';box.className='notice';box.setAttribute('role','status');$('app').prepend(box);}box.textContent=m;}
@@ -34,7 +34,7 @@ async function refresh(){try{if(admin){
  message('Products are submitted as drafts for moderation. Existing financial and onboarding terms remain unchanged.');
  }}catch(e){message(e.message);}}
 function edit(id){const p=products.find(p=>p.id===id);if(!p)return;const f=$('saveProduct');for(const field of ['id','name','category_id','price','stock_quantity','sku','description'])f.elements[field].value=p[field]??'';f.elements.stock_quantity.disabled=true;$('productForm').classList.remove('hidden');}
-$('login').onsubmit=async e=>{e.preventDefault();const f=new FormData(e.target);$('authmsg').textContent='Signing in…';const {error}=await db.auth.signInWithPassword({email:f.get('email'),password:f.get('password')});if(error){$('authmsg').textContent=error.message;return;}await boot();};
+$('login').onsubmit=async e=>{e.preventDefault();if(readOnly){$('authmsg').textContent='Staging Preview only — production account sign-in is disabled.';return;}const f=new FormData(e.target);$('authmsg').textContent='Signing in…';const {error}=await db.auth.signInWithPassword({email:f.get('email'),password:f.get('password')});if(error){$('authmsg').textContent=error.message;return;}await boot();};
 $('logout').onclick=async()=>{await db.auth.signOut();location.reload();};document.querySelectorAll('.nav').forEach(b=>b.onclick=()=>show(b.dataset.view));
 if(!admin){$('newProduct').onclick=()=>{$('saveProduct').reset();$('saveProduct').elements.stock_quantity.disabled=false;$('productForm').classList.remove('hidden');};$('cancelProduct').onclick=()=>$('productForm').classList.add('hidden');$('saveProduct').onsubmit=async e=>{e.preventDefault();const body=Object.fromEntries(new FormData(e.target));body.price=Number(body.price);body.stock_quantity=body.id?products.find(p=>p.id===body.id)?.stock_quantity:Number(body.stock_quantity);try{await api('merchant/products',{method:'POST',body});$('productForm').classList.add('hidden');await refresh();message('Product saved as draft for review.');}catch(err){message(err.message);}};}
 await boot();
