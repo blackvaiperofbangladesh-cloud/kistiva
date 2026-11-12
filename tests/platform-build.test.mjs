@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {existsSync,readFileSync} from 'node:fs';
 import {spawnSync} from 'node:child_process';
-for(const app of ['marketplace','mobile','merchant','admin']){
+for(const app of ['marketplace','mobile','merchant','admin','owner']){
  test(`${app} builds independently with isolated config`,()=>{
   assert.ok(existsSync(`apps/${app}/vercel.json`),'independent deployment configuration missing');
   const r=spawnSync(process.execPath,['scripts/build.mjs',app],{encoding:'utf8'});
