@@ -81,3 +81,11 @@ test('marketing landing retains approved source, exactly three hero slides and H
  assert.doesNotMatch(html,/href="create-account\//);
  assert.doesNotMatch(html,/sb_secret_|service_role|sk-emergent/);
 });
+
+test('landing never claims live search or active signup',()=>{
+ const html=readFileSync('apps/landing/index.html','utf8');
+ assert.doesNotMatch(html,/Preview shows categories\. Product search is not live\./);
+ assert.doesNotMatch(html,/Shop Now · Create Account/);
+ assert.match(html,/Search opens the protected International Store Preview/);
+ assert.match(html,/Account Preview — Login HOLD/);
+});
